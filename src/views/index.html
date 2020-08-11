@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Library Management</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <br><br>
+      <button type="button" class="btn btn-primary" onclick="issuedBookInLastOneMonth()">Books Issued In Last 30 Days</button>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <button type="button" class="btn btn-primary" onclick="clearResult()">Clear Result</button>
+    <br>       
+  <table class="table" id="tBid">
+    <thead>
+      <tr>
+        <th>Sr No</th>
+        <th>Book Name</th>
+        <th>Author Name</th>
+        <th>Book Issued To</th>
+        <th>Issued Date</th>
+        <th>Return Date</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody id="tBooking">
+       
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Issue Book</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form>
+                <div class="form-group">
+                  <label for="recipient-name" class="col-form-label">Enter User Name:</label>
+                  <input type="userName"   id="userName" class="form-control"/>  
+                </div>
+                <div class="form-group">
+                  <label for="message-text" class="col-form-label">Issue Date:</label>
+                  <input type="date"   id="date" class="form-control"/>
+                </div>
+              </form>
+            </div>
+            <input type="hidden" id="bookId"/>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" onclick="submitIssueBook()">Issue Book</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="exampleModal111" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Return Book</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form>
+                <div class="form-group">
+                  <label for="message-text" class="col-form-label">Return Date:</label>
+                  <input type="date"  id="rDate" class="form-control"/>
+                </div>
+              </form>
+            </div>
+            <input type="hidden" id="rookId"/>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" onclick="returnSubmitBook()">Return Book</button>
+            </div>
+          </div>
+        </div>
+      </div>
+</body>
+</html>
+
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function(event) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = JSON.parse(this.responseText); 
+                let html = '';
+                for (let i = 0; i < data.bookData.length;i++) {
+                    let uName = data.bookData[i]['userName'] ? data.bookData[i]['userName'] : '---';
+                    let idate = data.bookData[i]['issueDate'] ? data.bookData[i]['issueDate'] : '---';
+                    let rdate = data.bookData[i]['returnDate'] ? data.bookData[i]['returnDate'] : '---';
+                    let idisable = '';
+                    let rdisable = '';
+                    if (data.bookData[i]['issueDate']) {
+                        idisable = 'disabled';
+                    }
+                    if (!data.bookData[i]['returnDate'] && !data.bookData[i]['issueDate']) {
+                        rdisable = 'disabled';
+                    }
+
+                    html+= '<tr>';
+                    html+= '<td>'+( parseInt(i)+1)+'</td>';
+                    html+= '<td>'+data.bookData[i]['bookName']+'</td>';
+                    html+= '<td>'+data.bookData[i]['authorName']+'</td>';
+                    html+= '<td>'+uName+'</td>';
+                    html+= '<td>'+idate+'</td>';
+                    html+= '<td>'+rdate+'</td>';
+                    html+= '<td><button type="button" '+idisable+' class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" onclick=issueBook("'+String(data.bookData[i]['bookId'])+'")>Issue Book</button>';
+                    html+= '&nbsp;&nbsp;<button type="button" '+rdisable+' class="btn btn-primary" data-toggle="modal" data-target="#exampleModal111" onclick=returnBook("'+String(data.bookData[i]['bookId'])+'")>Return Book</button></td>';
+                }
+                document.getElementById("tBooking").innerHTML = html;
+            }
+        };
+        xhttp.open("GET", "http://localhost:3002/book/retrieve", true);
+        xhttp.send();
+    });
+
+
+    function issueBook(bookId) {
+        document.getElementById('bookId').value = bookId;
+    }
+
+    function returnBook(bookId) {
+        document.getElementById('rookId').value = bookId;
+    }
+
+    function submitIssueBook() {
+        let userName = document.getElementById('userName').value; 
+        let issueDate = document.getElementById('date').value;
+        let bookId =  document.getElementById('bookId').value;
+        if (userName === '' || issueDate === ''){
+            alert("Please fill the data");
+            return;
+        }
+        let obj = {
+            userName: userName,
+            issueDate: issueDate,
+            bookId: bookId
+        }
+        $.ajax({
+            type: "POST",
+            data: obj,
+            url: 'http://localhost:3002/book/issueBook',
+            dataType:"json",
+            success: function(response){
+                alert("successfully issued the book");
+            },
+            error: function(error){
+                alert(error.responseJSON.message);
+            }
+        });
+        $('#exampleModal').modal('toggle');
+        location.reload();
+    }
+
+    function returnSubmitBook() {
+        let returnDate = document.getElementById('rDate').value;
+        let bookId =  document.getElementById('rookId').value;
+        if (returnDate === ''){
+            alert("Please fill the data");
+            return;
+        }
+        let obj = {
+            returnDate: returnDate,
+            bookId: bookId
+        }
+        $.ajax({
+            type: "POST",
+            data: obj,
+            url: 'http://localhost:3002/book/returnBook',
+            dataType:"json",
+            success: function(response){
+                alert("successfully return the book");
+            },
+            error: function(error){
+                alert(error.responseJSON.message);
+            }
+        });
+        $('#exampleModal111').modal('toggle');
+        location.reload();
+    }
+
+    function issuedBookInLastOneMonth() {
+      var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = JSON.parse(this.responseText);
+                if (data.bookData.length === 0){
+                  document.getElementById("tBooking").innerHTML = '<tr>No Record Found</tr>';
+                  return;
+                } 
+                let html = '';
+                for (let i = 0; i < data.bookData.length;i++) {
+                    let uName = data.bookData[i]['userName'] ? data.bookData[i]['userName'] : '---';
+                    let idate = data.bookData[i]['issueDate'] ? data.bookData[i]['issueDate'] : '---';
+                    let rdate = data.bookData[i]['returnDate'] ? data.bookData[i]['returnDate'] : '---';
+                    let idisable = '';
+                    let rdisable = '';
+                    if (data.bookData[i]['issueDate']) {
+                        idisable = 'disabled';
+                    }
+                    if (!data.bookData[i]['returnDate'] && !data.bookData[i]['issueDate']) {
+                        rdisable = 'disabled';
+                    }
+
+                    html+= '<tr>';
+                    html+= '<td>'+( parseInt(i)+1)+'</td>';
+                    html+= '<td>'+data.bookData[i]['bookName']+'</td>';
+                    html+= '<td>'+data.bookData[i]['authorName']+'</td>';
+                    html+= '<td>'+uName+'</td>';
+                    html+= '<td>'+idate+'</td>';
+                    html+= '<td>'+rdate+'</td>';
+                    html+= '<td><button type="button" '+idisable+' class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" onclick=issueBook("'+String(data.bookData[i]['bookId'])+'")>Issue Book</button>';
+                    html+= '&nbsp;&nbsp;<button type="button" '+rdisable+' class="btn btn-primary" data-toggle="modal" data-target="#exampleModal111" onclick=returnBook("'+String(data.bookData[i]['bookId'])+'")>Return Book</button></td>';
+                }
+                document.getElementById("tBooking").innerHTML = html;
+            }
+        };
+        xhttp.open("GET", "http://localhost:3002/book/getRecordOfLastOneMonthByIssueDate", true);
+        xhttp.send();
+    }
+
+    function clearResult() {
+      location.reload();
+    }
+
+  </script>
