@@ -13,15 +13,19 @@ const bookSchema = new Schema({
     returnDate : { type: Date }
 },
 {
+    timestamps : true
+},
+{
  collection : "Bookings"
-},{
- timestamps : true
 });
 
 
 bookConnection.getBookConnection = () =>{
    return mongoose.connect(url,{}).then((db)=>{
-        return db.model('Bookings',bookSchema);
+        return db.model('Bookings',bookSchema,'Bookings');
+    }).catch((e)=>{
+        let err = new Error("Unable to connect db");
+        throw err;
     });
 }
 
